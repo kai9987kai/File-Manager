@@ -59,9 +59,13 @@ class FileDialog:
         self.dirs.bind('<Double-ButtonRelease-1>', self.dirs_double_event)
 
         self.ok_button = ttk.Button(self.botframe,
-                                 text="OK",
+                                 text="OPEN",
                                  command=self.ok_command)
         self.ok_button.pack(side=LEFT)
+        self.DELETEFILE_button = ttk.Button(self.botframe,
+                                    text="DELETE FILE",
+                                    command=self.Delete_command)
+        self.DELETEFILE_button.pack(side=LEFT)
         self.filter_button = ttk.Button(self.botframe,
                                     text="Filter",
                                     command=self.filter_command)
@@ -187,11 +191,24 @@ class FileDialog:
 class LoadFileDialog(FileDialog):
 
 
-    title = "File Manager"
+    title = "Load File Selection Dialog"
 
     def ok_command(self):
         file = self.get_selection()
         os.startfile(file)
+    def Delete_command(self):
+        file = self.get_selection()
+        if os.path.exists(file):
+            os.remove(file)
+            os.execl(sys.executable, sys.executable, *sys.argv)
+        else:
+            print("no file selected")
+
+
+
+
+
+
 
 # the directory dialog has its own _fix routines.
 class Directory(commondialog.Dialog):
@@ -211,7 +228,6 @@ class Directory(commondialog.Dialog):
             self.options["initialdir"] = result
         self.directory = result # compatibility
         return result
-
 
 def askdirectory (**options):
     "Ask for a directory, and return the file name"
