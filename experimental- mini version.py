@@ -454,6 +454,11 @@ class FileManagerTab(LoggerMixin):
         # Placeholder for dual-pane functionality
         self.manager.log("Toggled dual-pane mode.")
 
+    def toggle_recursive(self):
+        # Toggle recursive scanning on/off
+        self.recursive.set(not self.recursive.get())
+        self._filter()
+
 
     def _open(self):
         fp = self._selected()
