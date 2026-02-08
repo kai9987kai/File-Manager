@@ -45,7 +45,7 @@ class LoggerMixin:
     def log(self, message):
         timestamp = time.strftime('%H:%M:%S')
         self.log_console.config(state="normal")
-        self.log_console.insert(END, f"[{timestamp}] {message}\n")
+        self.log_console.insert(END, f"[{timestamp}] {message}\\n")
         self.log_console.see(END)
         self.log_console.config(state="disabled")
 
@@ -414,7 +414,7 @@ class FileManagerTab(LoggerMixin):
         try:
             names = os.listdir(self.dest_directory)
         except Exception as e:
-            messagebox.showerror("Error", f"Cannot open destination {self.dest_directory}:\n{e}")
+            messagebox.showerror("Error", f"Cannot open destination {self.dest_directory}:\\n{e}")
             return
         dirs = [d for d in names if os.path.isdir(os.path.join(self.dest_directory, d))]
         dirs.sort()
@@ -545,10 +545,10 @@ class FileManagerTab(LoggerMixin):
                 size, mtime = 0, ""
             ftype = os.path.splitext(filepath)[1].lower() or "Unknown"
             tag = self.file_tags.get(filepath, "None")
-            details = (f"Path: {filepath}\n"
-                       f"Size: {human_readable_size(size)}\n"
-                       f"Modified: {mtime}\n"
-                       f"Type: {ftype}\n"
+            details = (f"Path: {filepath}\\n"
+                       f"Size: {human_readable_size(size)}\\n"
+                       f"Modified: {mtime}\\n"
+                       f"Type: {ftype}\\n"
                        f"Tag: {tag}")
             self.details_text.insert(END, details)
         else:
@@ -586,7 +586,7 @@ class FileManagerTab(LoggerMixin):
                         os.remove(fullpath)
                         self.main_manager.log(f"Deleted: {fullpath}")
                 except Exception as e:
-                    messagebox.showerror("Deletion Error", f"Error deleting {fullpath}:\n{e}")
+                    messagebox.showerror("Deletion Error", f"Error deleting {fullpath}:\\n{e}")
             self.filter_command()
 
     def rename_command(self):
@@ -605,7 +605,7 @@ class FileManagerTab(LoggerMixin):
                 self.main_manager.log(f"Renamed: {fullpath} -> {new_fullpath}")
                 self.filter_command()
             except Exception as e:
-                messagebox.showerror("Rename Error", f"Error renaming file:\n{e}")
+                messagebox.showerror("Rename Error", f"Error renaming file:\\n{e}")
 
     def open_file(self, path):
         try:
@@ -616,7 +616,7 @@ class FileManagerTab(LoggerMixin):
             elif os.name == 'posix':
                 os.system(f"xdg-open '{path}'")
         except Exception as e:
-            messagebox.showerror("Open File Error", f"Could not open file:\n{e}")
+            messagebox.showerror("Open File Error", f"Could not open file:\\n{e}")
 
     def copy_command(self):
         if self.dual_pane.get():
@@ -633,7 +633,7 @@ class FileManagerTab(LoggerMixin):
                     shutil.copy2(src, dst)
                     self.main_manager.log(f"Copied: {src} -> {dst}")
                 except Exception as e:
-                    messagebox.showerror("Copy Error", f"Error copying {filename}:\n{e}")
+                    messagebox.showerror("Copy Error", f"Error copying {filename}:\\n{e}")
             self.refresh_dest_panel()
         else:
             messagebox.showinfo("Dual Pane Mode", "Enable Dual Pane Mode to copy files between directories.")
@@ -653,7 +653,7 @@ class FileManagerTab(LoggerMixin):
                     shutil.move(src, dst)
                     self.main_manager.log(f"Moved: {src} -> {dst}")
                 except Exception as e:
-                    messagebox.showerror("Move Error", f"Error moving {filename}:\n{e}")
+                    messagebox.showerror("Move Error", f"Error moving {filename}:\\n{e}")
             self.filter_command()
             self.refresh_dest_panel()
         else:
@@ -688,7 +688,7 @@ class FileManagerTab(LoggerMixin):
             except Exception:
                 size, mtime = 0, ""
             tag = self.file_tags.get(fullpath, "None")
-            info = f"File: {fullpath}\nSize: {human_readable_size(size)}\nModified: {mtime}\nTag: {tag}"
+            info = f"File: {fullpath}\\nSize: {human_readable_size(size)}\\nModified: {mtime}\\nTag: {tag}"
             messagebox.showinfo("File Properties", info)
 
     def sort_by_column(self, col):
