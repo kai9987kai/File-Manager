@@ -1,30 +1,31 @@
-import sys
-import os
-
-# Ensure app is in path
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-
-from app.ui.main_window import MainWindow
-
+"""Launch the desktop file manager."""
+import argparse
 import logging
+import os
+import sys
 
-# Configure logging
-logging.basicConfig(
-    filename='app_debug.log', 
-    level=logging.DEBUG, 
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    filemode='w'
-)
+from app.version import __version__
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(description="Browse and manage files in a tabbed desktop app.")
+    parser.add_argument("directory", nargs="?", default=None, help="Initial folder (home folder in the Windows app; current directory from Python)")
+    parser.add_argument("--version", action="version", version=f"File Manager {__version__}")
+    parser.add_argument("--smoke-test", metavar="REPORT", help=argparse.SUPPRESS)
+    args = parser.parse_args(argv)
+    if args.smoke_test:
+        from app.packaging_smoke import run_smoke_test
+        return run_smoke_test(args.smoke_test)
+    from app.ui.main_window import MainWindow
+    initial = args.directory or (os.path.expanduser("~") if getattr(sys, "frozen", False) else os.getcwd())
+    directory = os.path.abspath(os.path.expanduser(initial))
+    if not os.path.isdir(directory):
+        parser.error(f"Folder not found: {directory}")
+    logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
+    app = MainWindow(directory)
+    app.mainloop()
+    return 0
+
 
 if __name__ == "__main__":
-    print("Starting app...")
-    logging.info("Application starting...")
-    try:
-        app = MainWindow()
-        print("MainWindow created.")
-        app.mainloop()
-    except Exception as e:
-        import traceback
-        traceback.print_exc()
-        logging.critical("Fatal error", exc_info=True)
-        input("Press Enter to continue...")
+    raise SystemExit(main())

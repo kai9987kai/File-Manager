@@ -1,0 +1,4 @@
+# Isolated Windows build environment. Runtime versions match the tested app.
+Pillow==12.1.1
+Send2Trash==2.1.0
+PyInstaller==6.19.0
