@@ -117,14 +117,16 @@ def inspect_pe(path, application=True):
 
 
 def smoke(executable, report, log):
-    run([executable, "--smoke-test", report], log, timeout=90)
+    # The one-file launcher may retry deletion of loaded libraries after the
+    # application has exited, especially under Windows ARM64 emulation.
+    run([executable, "--smoke-test", report], log, timeout=180)
     result = json.loads(report.read_text(encoding="utf-8"))
     if not result.get("passed") or result.get("version") != __version__ or not result.get("frozen"):
         raise RuntimeError(f"Packaged smoke check failed: {report}")
     return result
 
 
-def build(iscc):
+def build(iscc, allow_uninstall_residue=False):
     if sys.platform != "win32" or sysconfig.get_platform() != "win-amd64":
         raise RuntimeError("Build using 64-bit x64 Python on Windows.")
     run_id = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
@@ -206,8 +208,12 @@ collection = COLLECT(installed, a.binaries, a.datas, strip=False, upx=False, nam
     deadline = time.monotonic() + 10
     while (installation / "FileManager.exe").exists() and time.monotonic() < deadline:
         time.sleep(.1)
-    if any((installation / relative).exists() for relative in payload):
-        raise RuntimeError("Uninstaller left application payload files behind")
+    remaining_payload = [relative for relative in payload if (installation / relative).exists()]
+    uninstall_check = {"passed": not remaining_payload, "remaining_payload": remaining_payload,
+        "notes": "Uninstaller exited successfully; remaining files, if any, failed Windows deletion after runtime launch."}
+    write_json(work / "uninstall-check.json", uninstall_check)
+    if remaining_payload and not allow_uninstall_residue:
+        raise RuntimeError("Uninstaller left application payload files behind. See uninstall-check.json; no release was published.")
     if sources != source_snapshot():
         raise RuntimeError("Application/build sources changed during packaging; rebuild required")
 
@@ -215,8 +221,13 @@ collection = COLLECT(installed, a.binaries, a.datas, strip=False, upx=False, nam
     with zipfile.ZipFile(source_zip, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=9) as archive:
         for relative in sources:
             archive.write(ROOT / relative, arcname=f"FileManager-{__version__}/{relative}")
+    portable_zip = staged / f"{portable_name}-Portable.zip"
+    with zipfile.ZipFile(portable_zip, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=9) as archive:
+        for path in sorted(bundle.rglob("*")):
+            if path.is_file():
+                archive.write(path, arcname=f"FileManager/{path.relative_to(bundle).as_posix()}")
     shutil.copy2(portable, staged / portable.name)
-    for name in ("source-smoke.json", "portable-smoke.json", "bundle-smoke.json", "installed-smoke.json"):
+    for name in ("source-smoke.json", "portable-smoke.json", "bundle-smoke.json", "installed-smoke.json", "uninstall-check.json"):
         shutil.copy2(work / name, staged / name)
     write_json(staged / "source-manifest.json", sources)
     write_json(staged / "installed-payload-sha256.json", payload)
@@ -229,7 +240,11 @@ collection = COLLECT(installed, a.binaries, a.datas, strip=False, upx=False, nam
         "checks": {"tests": "passed", "compilation": "passed", "whitespace": "passed",
             "source_smoke": source_smoke["passed"], "portable_smoke": portable_smoke["passed"],
             "bundle_smoke": bundle_smoke["passed"], "installed_smoke": installed_smoke["passed"],
-            "installer_payload_hashes": "passed", "uninstaller": "passed"},
+            "installer_payload_hashes": "passed", "uninstaller": "passed" if uninstall_check["passed"] else "incomplete_cleanup"},
+        "known_limitations": ([] if uninstall_check["passed"] else [
+            "Inno Setup 6 uninstall left previously loaded EXE/DLL/PYD files on the tested ARM64 Windows host. See uninstall-check.json."])
+            + (["Earlier validation on this ARM64 host observed one-file launcher cleanup delays and leftover temporary DLL/PYD files. The portable folder ZIP avoids temporary extraction."]
+               if platform.machine().upper() == "ARM64" else []),
         "binaries": binaries,
         "artifacts": {path.name: {"bytes": path.stat().st_size, "sha256": sha256(path)}
             for path in sorted(staged.iterdir()) if path.suffix.lower() in {".exe", ".zip"}}}
@@ -252,5 +267,7 @@ collection = COLLECT(installed, a.binaries, a.datas, strip=False, upx=False, nam
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--iscc", help="Path to the Inno Setup 6 compiler")
+    parser.add_argument("--allow-uninstall-residue", action="store_true",
+        help="Export with an explicit failed-uninstall receipt if app launch/install checks pass but runtime files remain")
     arguments = parser.parse_args()
-    build(compiler_path(arguments.iscc))
+    build(compiler_path(arguments.iscc), arguments.allow_uninstall_residue)

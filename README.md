@@ -7,6 +7,7 @@ A tabbed Python/Tk desktop file manager with background search, file previews, a
 Release output is in `release/2.0.0/`:
 
 - `FileManager-2.0.0-Windows-x64.exe` — standalone portable executable; Python is bundled.
+- `FileManager-2.0.0-Windows-x64-Portable.zip` — extract the whole folder and run `FileManager.exe`; avoids one-file temporary extraction.
 - `FileManager-2.0.0-Windows-x64-Setup.exe` — per-user installer with Start Menu shortcuts, an optional desktop shortcut, and an uninstaller.
 - `FileManager-2.0.0-Source.zip` — matching application/build sources.
 - `SHA256SUMS.txt` and JSON manifests — artifact hashes, dependency versions, and smoke-test receipts.
@@ -14,6 +15,8 @@ Release output is in `release/2.0.0/`:
 Packages target Windows 10/11 x64, and x64-capable Windows 11 ARM64 through emulation. Installed files go to `%LOCALAPPDATA%\Programs\FileManager`; installation does not request administrator access. Uninstalling leaves your preferences and personal files in place. The packaged app opens your home folder by default.
 
 These locally generated packages are unsigned. Windows may display an unknown-publisher or SmartScreen prompt.
+
+Known validation limitations on the tested ARM64 Windows host: after launching the installed app, the Inno Setup 6 uninstaller left some EXE/DLL/PYD files behind with Windows access-denied errors, despite the app exiting. The single EXE launcher also showed delayed cleanup and leftover temporary runtime files. Installation, payload checksums, and application runtime checks pass. `uninstall-check.json` records remaining installed files. The portable folder ZIP avoids installation and one-file temporary extraction and is recommended on this host. A normal release build fails on incomplete uninstall cleanup; `--allow-uninstall-residue` is an explicit diagnostic export option and does not mark that check as passed.
 
 To rebuild on Windows with x64 Python and Inno Setup 6:
 
