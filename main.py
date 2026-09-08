@@ -7,8 +7,22 @@ import sys
 from app.version import __version__
 
 
+def _show_startup_error(message):
+    import ctypes
+    ctypes.windll.user32.MessageBoxW(None, message, f"File Manager {__version__}", 0x10)
+
+
+class StartupParser(argparse.ArgumentParser):
+    def error(self, message):
+        if getattr(sys, "frozen", False) and sys.platform == "win32" and sys.stderr is None:
+            if "--smoke-test" not in sys.argv:
+                _show_startup_error(message)
+            raise SystemExit(2)
+        super().error(message)
+
+
 def main(argv=None):
-    parser = argparse.ArgumentParser(description="Browse and manage files in a tabbed desktop app.")
+    parser = StartupParser(description="Browse and manage files in a tabbed desktop app.")
     parser.add_argument("directory", nargs="?", default=None, help="Initial folder (home folder in the Windows app; current directory from Python)")
     parser.add_argument("--version", action="version", version=f"File Manager {__version__}")
     parser.add_argument("--smoke-test", metavar="REPORT", help=argparse.SUPPRESS)

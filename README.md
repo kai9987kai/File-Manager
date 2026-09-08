@@ -2,6 +2,29 @@
 
 A tabbed Python/Tk desktop file manager with background search, file previews, and recoverable deletion.
 
+## Windows packages (2.0.0)
+
+Release output is in `release/2.0.0/`:
+
+- `FileManager-2.0.0-Windows-x64.exe` — standalone portable executable; Python is bundled.
+- `FileManager-2.0.0-Windows-x64-Setup.exe` — per-user installer with Start Menu shortcuts, an optional desktop shortcut, and an uninstaller.
+- `FileManager-2.0.0-Source.zip` — matching application/build sources.
+- `SHA256SUMS.txt` and JSON manifests — artifact hashes, dependency versions, and smoke-test receipts.
+
+Packages target Windows 10/11 x64, and x64-capable Windows 11 ARM64 through emulation. Installed files go to `%LOCALAPPDATA%\Programs\FileManager`; installation does not request administrator access. Uninstalling leaves your preferences and personal files in place. The packaged app opens your home folder by default.
+
+These locally generated packages are unsigned. Windows may display an unknown-publisher or SmartScreen prompt.
+
+To rebuild on Windows with x64 Python and Inno Setup 6:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File packaging/build_release.ps1
+```
+
+The build script creates an isolated `.venv-build`, validates the source, builds both EXE layouts, tests their actual bundled runtimes, compiles the installer, checks installed-file hashes, and tests uninstall in a separate build folder. Installer smoke mode suppresses shortcuts and uninstall registration; it does not change your regular installed application. Detailed logs remain under `build/windows/`.
+
+Packaging references: [PyInstaller](https://pyinstaller.org/en/stable/usage.html), [Inno per-user installation](https://jrsoftware.org/ishelp/topic_setup_privilegesrequired.htm), and [supported Windows architectures](https://jrsoftware.org/ishelp/topic_setup_architecturesallowed.htm).
+
 ## Run
 
 Requires **Python 3.10+**, Tk, and a desktop session. Windows is the primary development platform; macOS and Linux use their system file opener and trash service.
